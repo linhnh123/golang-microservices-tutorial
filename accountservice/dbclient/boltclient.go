@@ -14,6 +14,7 @@ type IBoltClient interface {
 	OpenBoltDb()
 	QueryAccount(accountId string) (model.Account, error)
 	Seed()
+	CloseBoltDb()
 }
 
 type BoltClient struct {
@@ -26,6 +27,12 @@ func (bc *BoltClient) OpenBoltDb() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	log.Println("Open DB")
+}
+
+func (bc *BoltClient) CloseBoltDb() {
+	bc.boltDB.Close()
+	log.Println("Close DB")
 }
 
 func (bc *BoltClient) Seed() {
@@ -67,6 +74,8 @@ func seedAccounts(bc *BoltClient) {
 func (bc *BoltClient) QueryAccount(accountId string) (model.Account, error) {
 	account := model.Account{}
 
+	bc.OpenBoltDb()
+
 	err := bc.boltDB.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("AccountBucket"))
 
@@ -78,6 +87,8 @@ func (bc *BoltClient) QueryAccount(accountId string) (model.Account, error) {
 
 		return nil
 	})
+
+	defer bc.CloseBoltDb()
 
 	if err != nil {
 		return model.Account{}, nil

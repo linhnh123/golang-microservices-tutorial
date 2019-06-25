@@ -18,6 +18,10 @@ func (m *MockBoltClient) OpenBoltDb() {
 
 }
 
+func (m *MockBoltClient) CloseBoltDb() {
+
+}
+
 func (m *MockBoltClient) Seed() {
 
 }
