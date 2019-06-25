@@ -14,6 +14,7 @@ type IBoltClient interface {
 	OpenBoltDb()
 	QueryAccount(accountId string) (model.Account, error)
 	Seed()
+	Check() bool
 	CloseBoltDb()
 }
 
@@ -95,4 +96,8 @@ func (bc *BoltClient) QueryAccount(accountId string) (model.Account, error) {
 	}
 
 	return account, nil
+}
+
+func (bc *BoltClient) Check() bool {
+	return bc.boltDB != nil
 }
