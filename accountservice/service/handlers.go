@@ -7,6 +7,9 @@ import (
 	"net"
 	"net/http"
 	"strconv"
+	"time"
+
+	"github.com/linhnh123/golang-microservices-tutorial/common/messaging"
 
 	"github.com/linhnh123/golang-microservices-tutorial/accountservice/model"
 
@@ -16,6 +19,7 @@ import (
 )
 
 var DBClient dbclient.IBoltClient
+var MessagingClient messaging.IMessagingClient
 
 type healthCheckResponse struct {
 	Status string `json:"status"`
@@ -45,6 +49,19 @@ func getIp() string {
 	panic("Unable to determine local IP address")
 }
 
+func notifyVIP(account model.Account) {
+	if account.Id == "10000" {
+		go func(account model.Account) {
+			vipNotification := model.VipNotification{AccountId: account.Id, ReadAt: time.Now().UTC().String()}
+			data, _ := json.Marshal(vipNotification)
+			err := MessagingClient.PublishOnQueue(data, "vipQueue")
+			if err != nil {
+				fmt.Println(err.Error())
+			}
+		}(account)
+	}
+}
+
 func GetAccount(w http.ResponseWriter, r *http.Request) {
 	var accountId = mux.Vars(r)["accountId"]
 
@@ -60,6 +77,8 @@ func GetAccount(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
+
+	notifyVIP(account)
 
 	data, _ := json.Marshal(account)
 	w.Header().Set("Content-Type", "application/json")

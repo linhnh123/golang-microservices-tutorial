@@ -5,6 +5,11 @@ import (
 	"fmt"
 	"net/http/httptest"
 	"testing"
+	"time"
+
+	"github.com/linhnh123/golang-microservices-tutorial/common/messaging"
+
+	"github.com/stretchr/testify/mock"
 
 	"gopkg.in/h2non/gock.v1"
 
@@ -13,6 +18,13 @@ import (
 	"github.com/linhnh123/golang-microservices-tutorial/accountservice/dbclient"
 	. "github.com/smartystreets/goconvey/convey"
 )
+
+// Create a mock instance that implements the IBoltClient interface
+var mockRepo = &dbclient.MockBoltClient{}
+var mockMessagingClient = &messaging.MockMessagingClient{}
+
+var anyString = mock.AnythingOfType("string")
+var anyByteArray = mock.AnythingOfType("[]uint8")
 
 func init() {
 	gock.InterceptClient(client)
@@ -40,9 +52,6 @@ func TestGetAccount(t *testing.T) {
 		MatchParam("strength", "4").
 		Reply(200).
 		BodyString(`{"quote":"May the source be with you. Always","ipAddress":"10.0.0.5:8080","language":"en"}`)
-
-	// Create a mock instance that implements the IBoltClient interface
-	mockRepo := &dbclient.MockBoltClient{}
 
 	// Declare two mock behaviours. For "123" as input, return a proper Account struct and nil as error.
 	// For "456" as input, return an empty Account object and a real error.
@@ -79,6 +88,35 @@ func TestGetAccount(t *testing.T) {
 			NewRouter().ServeHTTP(resp, req)
 			Convey("Then the response should be a 404", func() {
 				So(resp.Code, ShouldEqual, 404)
+			})
+		})
+	})
+}
+
+func TestNotificationIsSentForVIPAccount(t *testing.T) {
+	defer gock.Off()
+	gock.New("http://quotes-service:8080").
+		Get("/api/quote").
+		MatchParam("strength", "4").
+		Reply(200).
+		BodyString(`{"quote":"May the source be with you. Always","ipAddress":"10.0.0.5:8080","language":"en"}`)
+
+	mockRepo.On("QueryAccount", "10000").Return(model.Account{Id: "10000", Name: "Person_123"}, nil)
+	DBClient = mockRepo
+
+	mockMessagingClient.On("PublishOnQueue", anyByteArray, anyString).Return(nil)
+	MessagingClient = mockMessagingClient
+
+	Convey("Given a HTTP req for a VIP account", t, func() {
+		req := httptest.NewRequest("GET", "/accounts/10000", nil)
+		resp := httptest.NewRecorder()
+
+		Convey("When the request is handled by the Router", func() {
+			NewRouter().ServeHTTP(resp, req)
+			Convey("Then the response should be a 200 and the MessageClient should have been invoked", func() {
+				So(resp.Code, ShouldEqual, 200)
+				time.Sleep(time.Millisecond * 100)
+				So(mockMessagingClient.AssertNumberOfCalls(t, "PublishOnQueue", 1), ShouldBeTrue)
 			})
 		})
 	})
