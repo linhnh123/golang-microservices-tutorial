@@ -3,6 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/linhnh123/golang-microservices-tutorial/common/messaging"
 
@@ -60,5 +63,21 @@ func main() {
 	initializeBoltClient()
 	initializeMessaging()
 	go config.StartListener(appName, viper.GetString("amqp_server_url"), viper.GetString("config_event_bus"))
+
+	handleSigterm(func() {
+		service.MessagingClient.Close()
+	})
+
 	service.StartWebServer(viper.GetString("server_port"))
+}
+
+func handleSigterm(handleExit func()) {
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	signal.Notify(c, syscall.SIGTERM)
+	go func() {
+		<-c
+		handleExit()
+		os.Exit(1)
+	}()
 }

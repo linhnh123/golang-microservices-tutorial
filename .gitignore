@@ -1,5 +1,6 @@
 accountservice-linux-amd64
 healthchecker-linux-amd64
+vipservice-linux-amd64
 
 .gradle
 support/config-server/build
