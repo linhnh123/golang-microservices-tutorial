@@ -3,13 +3,13 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/linhnh123/golang-microservices-tutorial/common/config"
 	"github.com/linhnh123/golang-microservices-tutorial/vipservice/service"
-	"github.com/sirupsen/logrus"
 	"github.com/streadway/amqp"
 
 	"github.com/linhnh123/golang-microservices-tutorial/common/messaging"
@@ -33,13 +33,13 @@ func init() {
 
 func failOnError(err error, msg string) {
 	if err != nil {
-		logrus.Infof("%s: %s", msg, err)
+		log.Printf("%s: %s", msg, err)
 		panic(fmt.Sprintf("%s: %s", msg, err))
 	}
 }
 
 func onMessage(delivery amqp.Delivery) {
-	logrus.Infof("Got a message: %v\n", string(delivery.Body))
+	log.Printf("Got a message: %v\n", string(delivery.Body))
 }
 
 func initializeMessaging() {
@@ -58,7 +58,7 @@ func initializeMessaging() {
 }
 
 func main() {
-	logrus.Infoln("Starting " + appName + "...")
+	log.Println("Starting " + appName + "...")
 
 	config.LoadConfigurationFromBranch(viper.GetString("configServerUrl"), appName, viper.GetString("profile"), viper.GetString("configBranch"))
 

@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"flag"
 	"io/ioutil"
+	"log"
 	"net"
 	"os"
 	"sync"
 
 	"github.com/linhnh123/golang-microservices-tutorial/gelftail/aggregator"
 	"github.com/linhnh123/golang-microservices-tutorial/gelftail/transformer"
-	"github.com/sirupsen/logrus"
 )
 
 var authToken = ""
@@ -20,7 +20,7 @@ func init() {
 	data, err := ioutil.ReadFile("token.txt")
 	if err != nil {
 		msg := "Cannot find token.txt"
-		logrus.Errorln(msg)
+		log.Println(msg)
 		panic(msg)
 	}
 	authToken = string(data)
@@ -29,7 +29,7 @@ func init() {
 }
 
 func main() {
-	logrus.Println("Starting Gelf-tail server...")
+	log.Println("Starting Gelf-tail server...")
 
 	serverConn := startUDPServer(*port)
 	defer serverConn.Close()
@@ -39,7 +39,7 @@ func main() {
 	go aggregator.Start(bulkQueue, authToken)
 	go listenForLogStatements(serverConn, bulkQueue)
 
-	logrus.Infoln("Started Gelf-tail server")
+	log.Println("Started Gelf-tail server")
 
 	wg := sync.WaitGroup{}
 	wg.Add(1)
@@ -48,7 +48,7 @@ func main() {
 
 func checkError(err error) {
 	if err != nil {
-		logrus.Println("Error: ", err)
+		log.Println("Error: ", err)
 		os.Exit(0)
 	}
 }
@@ -70,18 +70,18 @@ func listenForLogStatements(serverConn *net.UDPConn, bulkQueue chan []byte) {
 	for {
 		n, _, err := serverConn.ReadFromUDP(buf)
 		if err != nil {
-			logrus.Errorf("Problem reading UDP message into buffer: %v\n", err.Error())
+			log.Printf("Problem reading UDP message into buffer: %v\n", err.Error())
 			continue
 		}
 		err = json.Unmarshal(buf[0:n], &item)
 		if err != nil {
-			logrus.Errorf("Problem unmarshalling log message into JSON: " + err.Error())
+			log.Printf("Problem unmarshalling log message into JSON: " + err.Error())
 			item = nil
 			continue
 		}
 		processedLogMessage, err := transformer.ProcessLogStatement(item)
 		if err != nil {
-			logrus.Printf("Problem parsing message: %v", string(buf[0:n]))
+			log.Printf("Problem parsing message: %v", string(buf[0:n]))
 		} else {
 			bulkQueue <- processedLogMessage
 		}

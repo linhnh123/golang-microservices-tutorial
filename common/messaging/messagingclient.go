@@ -2,8 +2,7 @@ package messaging
 
 import (
 	"fmt"
-
-	"github.com/sirupsen/logrus"
+	"log"
 
 	"github.com/streadway/amqp"
 )
@@ -77,7 +76,7 @@ func (m *MessagingClient) Publish(body []byte, exchangeName string, exchangeType
 		amqp.Publishing{
 			Body: body, // Our JSON body as []byte
 		})
-	logrus.Infof("A message was sent: %v", body)
+	log.Printf("A message was sent: %v", body)
 	return err
 }
 
@@ -107,7 +106,7 @@ func (m *MessagingClient) PublishOnQueue(body []byte, queueName string) error {
 			ContentType: "application/json",
 			Body:        body, // Our JSON body as []byte
 		})
-	logrus.Infof("A message was sent to queue %v: %v", queueName, body)
+	log.Printf("A message was sent to queue %v: %v", queueName, body)
 	return err
 }
 
@@ -127,7 +126,7 @@ func (m *MessagingClient) Subscribe(exchangeName string, exchangeType string, co
 	)
 	failOnError(err, "Failed to register an Exchange")
 
-	logrus.Infof("declared Exchange, declaring Queue (%s)", "")
+	log.Printf("declared Exchange, declaring Queue (%s)", "")
 	queue, err := ch.QueueDeclare(
 		"",    // name of the queue
 		false, // durable
@@ -138,7 +137,7 @@ func (m *MessagingClient) Subscribe(exchangeName string, exchangeType string, co
 	)
 	failOnError(err, "Failed to register an Queue")
 
-	logrus.Infof("declared Queue (%d messages, %d consumers), binding to Exchange (key '%s')",
+	log.Printf("declared Queue (%d messages, %d consumers), binding to Exchange (key '%s')",
 		queue.Messages, queue.Consumers, exchangeName)
 
 	err = ch.QueueBind(
@@ -171,7 +170,7 @@ func (m *MessagingClient) SubscribeToQueue(queueName string, consumerName string
 	ch, err := m.conn.Channel()
 	failOnError(err, "Failed to open a channel")
 
-	logrus.Infof("Declaring Queue (%s)", queueName)
+	log.Printf("Declaring Queue (%s)", queueName)
 	queue, err := ch.QueueDeclare(
 		queueName, // name of the queue
 		false,     // durable
@@ -212,7 +211,7 @@ func consumeLoop(deliveries <-chan amqp.Delivery, handlerFunc func(d amqp.Delive
 
 func failOnError(err error, msg string) {
 	if err != nil {
-		logrus.Infof("%s: %s", msg, err)
+		log.Printf("%s: %s", msg, err)
 		panic(fmt.Sprintf("%s: %s", msg, err))
 	}
 }

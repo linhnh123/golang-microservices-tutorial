@@ -3,11 +3,13 @@ package dbclient
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"strconv"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/boltdb/bolt"
 	"github.com/linhnh123/golang-microservices-tutorial/accountservice/model"
-	"github.com/sirupsen/logrus"
 )
 
 type IBoltClient interface {
@@ -26,14 +28,14 @@ func (bc *BoltClient) OpenBoltDb() {
 	var err error
 	bc.boltDB, err = bolt.Open("accounts.db", 0600, nil)
 	if err != nil {
-		logrus.Fatal(err)
+		log.Fatal(err)
 	}
-	logrus.Infoln("Open DB")
+	log.Println("Open DB")
 }
 
 func (bc *BoltClient) CloseBoltDb() {
 	bc.boltDB.Close()
-	logrus.Infoln("Close DB")
+	log.Println("Close DB")
 }
 
 func (bc *BoltClient) Seed() {
@@ -69,7 +71,7 @@ func seedAccounts(bc *BoltClient) {
 			return err
 		})
 	}
-	logrus.Infof("Seeded %v fake accounts\n", total)
+	log.Printf("Seeded %v fake accounts\n", total)
 }
 
 func (bc *BoltClient) QueryAccount(accountId string) (model.Account, error) {
@@ -91,9 +93,11 @@ func (bc *BoltClient) QueryAccount(accountId string) (model.Account, error) {
 	})
 
 	if err != nil {
+		logrus.Infoln(err.Error())
 		return model.Account{}, nil
 	}
 
+	logrus.Infoln("Account found")
 	return account, nil
 }
 

@@ -3,8 +3,7 @@ package transformer
 import (
 	"encoding/json"
 	"fmt"
-
-	"github.com/sirupsen/logrus"
+	"log"
 )
 
 func ProcessLogStatement(item map[string]interface{}) ([]byte, error) {
@@ -14,7 +13,7 @@ func ProcessLogStatement(item map[string]interface{}) ([]byte, error) {
 		var shortMessage map[string]interface{}
 		err := json.Unmarshal([]byte(shortMessageString), &shortMessage)
 		if err != nil {
-			logrus.Printf("Error parsing short_message: %v\n", err.Error())
+			log.Printf("Error parsing short_message: %v\n", err.Error())
 			return nil, fmt.Errorf("Error parsing 'short_message' property.")
 		}
 
@@ -23,10 +22,10 @@ func ProcessLogStatement(item map[string]interface{}) ([]byte, error) {
 			item["level"] = shortMessage["level"].(string)
 			delete(item, "short_message")
 		} else {
-			logrus.Println("Found log item with unparsable short_message: " + shortMessageString)
+			log.Println("Found log item with unparsable short_message: " + shortMessageString)
 			return nil, fmt.Errorf("Found log item with unparsable 'short_message' property.")
 		}
-		logrus.Println(item["msg"].(string))
+		log.Println(item["msg"].(string))
 
 		return json.Marshal(item)
 	} else {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -57,7 +58,7 @@ func init() {
 }
 
 func main() {
-	logrus.Infof("Starting %v\n", appName)
+	log.Printf("Starting %v\n", appName)
 
 	config.LoadConfigurationFromBranch(
 		viper.GetString("configServerUrl"),

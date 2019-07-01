@@ -3,9 +3,8 @@ package aggregator
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"net/http"
-
-	"github.com/sirupsen/logrus"
 )
 
 var client = &http.Client{}
@@ -31,13 +30,13 @@ func Start(bulkQueue chan []byte, authToken string) {
 func sendBulk(buffer bytes.Buffer) {
 	req, err := http.NewRequest("POST", url, bytes.NewReader(buffer.Bytes()))
 	if err != nil {
-		logrus.Errorln("Error creating bulk upload HTTP request: " + err.Error())
+		log.Println("Error creating bulk upload HTTP request: " + err.Error())
 		return
 	}
 	resp, err := client.Do(req)
 	if err != nil || resp.StatusCode != 200 {
-		logrus.Errorln("Error sending bulk: " + err.Error())
+		log.Println("Error sending bulk: " + err.Error())
 		return
 	}
-	logrus.Debugf("Successfully sent batch of %v bytes to Loggly\n", buffer.Len())
+	log.Printf("Successfully sent batch of %v bytes to Loggly\n", buffer.Len())
 }

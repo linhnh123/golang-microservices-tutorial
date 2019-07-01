@@ -4,12 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
 	"strconv"
 	"time"
-
-	"github.com/sirupsen/logrus"
 
 	"github.com/linhnh123/golang-microservices-tutorial/common/messaging"
 
@@ -58,7 +57,7 @@ func notifyVIP(account model.Account) {
 			data, _ := json.Marshal(vipNotification)
 			err := MessagingClient.PublishOnQueue(data, "vipQueue")
 			if err != nil {
-				logrus.Infoln(err.Error())
+				log.Println(err.Error())
 			}
 		}(account)
 	}
