@@ -9,6 +9,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/linhnh123/golang-microservices-tutorial/common/messaging"
 
 	"github.com/linhnh123/golang-microservices-tutorial/accountservice/model"
@@ -56,7 +58,7 @@ func notifyVIP(account model.Account) {
 			data, _ := json.Marshal(vipNotification)
 			err := MessagingClient.PublishOnQueue(data, "vipQueue")
 			if err != nil {
-				fmt.Println(err.Error())
+				logrus.Infoln(err.Error())
 			}
 		}(account)
 	}

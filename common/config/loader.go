@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/spf13/viper"
 )
 
@@ -24,7 +26,7 @@ type propertySource struct {
 
 func LoadConfigurationFromBranch(configServerUrl string, appName string, profile string, branch string) {
 	url := fmt.Sprintf("%s/%s/%s/%s", configServerUrl, appName, profile, branch)
-	fmt.Printf("Loading config from %s\n", url)
+	logrus.Infof("Loading config from %s\n", url)
 	body, err := fetchConfiguration(url)
 	if err != nil {
 		panic("Couldn't load configuration, cannot start. Terminating. Error: " + err.Error())
@@ -35,10 +37,10 @@ func LoadConfigurationFromBranch(configServerUrl string, appName string, profile
 func fetchConfiguration(url string) ([]byte, error) {
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Println("Recovered in f", r)
+			logrus.Infoln("Recovered in f", r)
 		}
 	}()
-	fmt.Printf("Getting config from %v\n", url)
+	logrus.Infof("Getting config from %v\n", url)
 	resp, err := http.Get(url)
 	if err != nil || resp.StatusCode != 200 {
 		panic("Couldn't load configuration, cannot start. Terminating. Error: " + err.Error())
@@ -59,9 +61,9 @@ func parseConfiguration(body []byte) {
 
 	for key, value := range cloudConfig.PropertySources[0].Source {
 		viper.Set(key, value)
-		fmt.Printf("Loading config property %v => %v\n", key, value)
+		logrus.Infof("Loading config property %v => %v\n", key, value)
 	}
 	if viper.IsSet("server_name") {
-		fmt.Printf("Successfully loaded configuration for service %s\n", viper.GetString("server_name"))
+		logrus.Infof("Successfully loaded configuration for service %s\n", viper.GetString("server_name"))
 	}
 }

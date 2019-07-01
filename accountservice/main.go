@@ -2,14 +2,12 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/linhnh123/golang-microservices-tutorial/common/messaging"
-
-	"github.com/linhnh123/golang-microservices-tutorial/accountservice/config"
+	"github.com/sirupsen/logrus"
 
 	"github.com/spf13/viper"
 
@@ -17,7 +15,7 @@ import (
 
 	"github.com/linhnh123/golang-microservices-tutorial/accountservice/service"
 
-	commonConfig "github.com/linhnh123/golang-microservices-tutorial/common/config"
+	"github.com/linhnh123/golang-microservices-tutorial/common/config"
 )
 
 var appName = "accountservice"
@@ -35,11 +33,19 @@ func initializeMessaging() {
 	}
 	service.MessagingClient = &messaging.MessagingClient{}
 	service.MessagingClient.ConnectToBroker(viper.GetString("amqp_server_url"))
-	service.MessagingClient.Subscribe(viper.GetString("config_event_bus"), "topic", appName, commonConfig.HandleRefreshEvent)
+	service.MessagingClient.Subscribe(viper.GetString("config_event_bus"), "topic", appName, config.HandleRefreshEvent)
 }
 
 func init() {
 	profile := flag.String("profile", "test", "Environment profile")
+	if *profile == "dev" {
+		logrus.SetFormatter(&logrus.TextFormatter{
+			TimestampFormat: "2006-01-02T15:04:05.000",
+			FullTimestamp:   true,
+		})
+	} else {
+		logrus.SetFormatter(&logrus.JSONFormatter{})
+	}
 	configServerUrl := flag.String("configServerUrl", "http://configserver:8888", "Address to config server")
 	configBranch := flag.String("configBranch", "master", "git branch to fetch configuration from")
 
@@ -51,7 +57,7 @@ func init() {
 }
 
 func main() {
-	fmt.Printf("Starting %v\n", appName)
+	logrus.Infof("Starting %v\n", appName)
 
 	config.LoadConfigurationFromBranch(
 		viper.GetString("configServerUrl"),
@@ -62,7 +68,6 @@ func main() {
 
 	initializeBoltClient()
 	initializeMessaging()
-	go config.StartListener(appName, viper.GetString("amqp_server_url"), viper.GetString("config_event_bus"))
 
 	handleSigterm(func() {
 		service.MessagingClient.Close()

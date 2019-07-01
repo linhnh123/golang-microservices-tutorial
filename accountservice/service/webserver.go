@@ -1,19 +1,20 @@
 package service
 
 import (
-	"log"
 	"net/http"
+
+	"github.com/sirupsen/logrus"
 )
 
 func StartWebServer(port string) {
 	r := NewRouter()
 	http.Handle("/", r)
 
-	log.Println("Starting HTTP service at " + port)
+	logrus.Infoln("Starting HTTP service at " + port)
 	err := http.ListenAndServe(":"+port, nil)
 
 	if err != nil {
-		log.Println("Error HTTP " + port)
-		log.Println("Error: " + err.Error())
+		logrus.Infoln("Error HTTP " + port)
+		logrus.Infoln("Error: " + err.Error())
 	}
 }

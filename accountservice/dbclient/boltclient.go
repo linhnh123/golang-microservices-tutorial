@@ -3,11 +3,11 @@ package dbclient
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"strconv"
 
 	"github.com/boltdb/bolt"
 	"github.com/linhnh123/golang-microservices-tutorial/accountservice/model"
+	"github.com/sirupsen/logrus"
 )
 
 type IBoltClient interface {
@@ -26,14 +26,14 @@ func (bc *BoltClient) OpenBoltDb() {
 	var err error
 	bc.boltDB, err = bolt.Open("accounts.db", 0600, nil)
 	if err != nil {
-		log.Fatal(err)
+		logrus.Fatal(err)
 	}
-	log.Println("Open DB")
+	logrus.Infoln("Open DB")
 }
 
 func (bc *BoltClient) CloseBoltDb() {
 	bc.boltDB.Close()
-	log.Println("Close DB")
+	logrus.Infoln("Close DB")
 }
 
 func (bc *BoltClient) Seed() {
@@ -69,13 +69,14 @@ func seedAccounts(bc *BoltClient) {
 			return err
 		})
 	}
-	fmt.Printf("Seeded %v fake accounts\n", total)
+	logrus.Infof("Seeded %v fake accounts\n", total)
 }
 
 func (bc *BoltClient) QueryAccount(accountId string) (model.Account, error) {
 	account := model.Account{}
 
 	bc.OpenBoltDb()
+	defer bc.CloseBoltDb()
 
 	err := bc.boltDB.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("AccountBucket"))
@@ -88,8 +89,6 @@ func (bc *BoltClient) QueryAccount(accountId string) (model.Account, error) {
 
 		return nil
 	})
-
-	defer bc.CloseBoltDb()
 
 	if err != nil {
 		return model.Account{}, nil
