@@ -68,3 +68,29 @@ func StartChildSpanFromContext(ctx context.Context, opName string) opentracing.S
 	child := tracer.StartSpan(opName, opentracing.ChildOf(parent.Context()))
 	return child
 }
+
+func StartSpanFromContextWithLogEvent(ctx context.Context, opName string, logStatement string) opentracing.Span {
+	span := ctx.Value("opentracing-span").(opentracing.Span)
+	child := tracer.StartSpan(opName, ext.RPCServerOption(span.Context()))
+	child.LogEvent(logStatement)
+	return child
+}
+
+func CloseSpan(span opentracing.Span, event string) {
+	span.LogEvent(event)
+	span.Finish()
+}
+
+func AddTracingToReqFromContext(ctx context.Context, req *http.Request) {
+	if ctx.Value("opentracing-span") == nil {
+		return
+	}
+	carrier := opentracing.HTTPHeadersCarrier(req.Header)
+	err := tracer.Inject(
+		ctx.Value("opentracing-span").(opentracing.Span).Context(),
+		opentracing.HTTPHeaders,
+		carrier)
+	if err != nil {
+		panic("Unable to inject tracing context: " + err.Error())
+	}
+}

@@ -45,3 +45,18 @@ func GetIPWithPrefix(prefix string) string {
 	}
 	return "127.0.0.1"
 }
+
+func GetIp() string {
+	addrs, err := net.InterfaceAddrs()
+	if err != nil {
+		return "error"
+	}
+	for _, address := range addrs {
+		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+			if ipnet.IP.To4() != nil {
+				return ipnet.IP.String()
+			}
+		}
+	}
+	panic("Unable to determine local IP address")
+}

@@ -1,6 +1,10 @@
 package service
 
-import "net/http"
+import (
+	"net/http"
+
+	gqlhandler "github.com/graphql-go/graphql-go-handler"
+)
 
 type Route struct {
 	Name        string
@@ -23,5 +27,14 @@ var routes = Routes{
 		"GET",
 		"/health",
 		HealthCheck,
+	},
+	Route{
+		"GraphQL",
+		"POST",
+		"/graphql",
+		gqlhandler.New(&gqlhandler.Config{
+			Schema: &schema,
+			Pretty: false,
+		}).ServeHTTP,
 	},
 }

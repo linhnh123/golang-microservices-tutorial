@@ -9,6 +9,8 @@ import (
 )
 
 func NewRouter() *mux.Router {
+	initQL(&LiveGraphQLResolvers{})
+
 	router := mux.NewRouter().StrictSlash(true)
 
 	for _, route := range routes {
