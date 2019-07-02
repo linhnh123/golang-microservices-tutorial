@@ -140,3 +140,16 @@ func getDefaultHystrixConfigPropertyValue(prop string) int {
 	}
 	panic("Got unknown hystrix property: " + prop + ". Panicing!")
 }
+
+func Deregister(amqpClient messaging.IMessagingClient) {
+	ip, err := util.ResolveIpFromHostsFile()
+	if err != nil {
+		ip = util.GetIPWithPrefix("10.0.")
+	}
+	token := DiscoveryToken{
+		State:   "DOWN",
+		Address: ip,
+	}
+	bytes, _ := json.Marshal(token)
+	amqpClient.PublishOnQueue(bytes, "discovery")
+}

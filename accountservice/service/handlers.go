@@ -70,7 +70,7 @@ func notifyVIP(account model.Account) {
 func GetAccount(w http.ResponseWriter, r *http.Request) {
 	var accountId = mux.Vars(r)["accountId"]
 
-	account, err := DBClient.QueryAccount(accountId)
+	account, err := DBClient.QueryAccount(r.Context(), accountId)
 	account.ServedBy = getIp()
 
 	if err != nil {

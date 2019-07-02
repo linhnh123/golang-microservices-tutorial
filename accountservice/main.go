@@ -8,6 +8,7 @@ import (
 	"syscall"
 
 	"github.com/linhnh123/golang-microservices-tutorial/common/messaging"
+	"github.com/linhnh123/golang-microservices-tutorial/common/tracing"
 	"github.com/sirupsen/logrus"
 
 	"github.com/spf13/viper"
@@ -17,6 +18,8 @@ import (
 	"github.com/linhnh123/golang-microservices-tutorial/accountservice/service"
 
 	"github.com/linhnh123/golang-microservices-tutorial/common/config"
+
+	cb "github.com/linhnh123/golang-microservices-tutorial/common/circuitbreaker"
 )
 
 var appName = "accountservice"
@@ -38,15 +41,11 @@ func initializeMessaging() {
 }
 
 func init() {
+	logrus.SetFormatter(&logrus.TextFormatter{
+		TimestampFormat: "2006-01-02T15:04:05.000",
+		FullTimestamp:   true,
+	})
 	profile := flag.String("profile", "test", "Environment profile")
-	if *profile == "dev" {
-		logrus.SetFormatter(&logrus.TextFormatter{
-			TimestampFormat: "2006-01-02T15:04:05.000",
-			FullTimestamp:   true,
-		})
-	} else {
-		logrus.SetFormatter(&logrus.JSONFormatter{})
-	}
 	configServerUrl := flag.String("configServerUrl", "http://configserver:8888", "Address to config server")
 	configBranch := flag.String("configBranch", "master", "git branch to fetch configuration from")
 
@@ -69,12 +68,20 @@ func main() {
 
 	initializeBoltClient()
 	initializeMessaging()
+	initializeTracing()
+
+	cb.ConfigureHystrix([]string{"imageservice", "quotes-service"}, service.MessagingClient)
 
 	handleSigterm(func() {
+		cb.Deregister(service.MessagingClient)
 		service.MessagingClient.Close()
 	})
 
 	service.StartWebServer(viper.GetString("server_port"))
+}
+
+func initializeTracing() {
+	tracing.InitTracing(viper.GetString("zipkin_server_url"), appName)
 }
 
 func handleSigterm(handleExit func()) {

@@ -1,6 +1,7 @@
 package dbclient
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -10,11 +11,12 @@ import (
 
 	"github.com/boltdb/bolt"
 	"github.com/linhnh123/golang-microservices-tutorial/accountservice/model"
+	"github.com/linhnh123/golang-microservices-tutorial/common/tracing"
 )
 
 type IBoltClient interface {
 	OpenBoltDb()
-	QueryAccount(accountId string) (model.Account, error)
+	QueryAccount(ctx context.Context, accountId string) (model.Account, error)
 	Seed()
 	Check() bool
 	CloseBoltDb()
@@ -74,7 +76,11 @@ func seedAccounts(bc *BoltClient) {
 	log.Printf("Seeded %v fake accounts\n", total)
 }
 
-func (bc *BoltClient) QueryAccount(accountId string) (model.Account, error) {
+func (bc *BoltClient) QueryAccount(ctx context.Context, accountId string) (model.Account, error) {
+	// Tracing
+	span := tracing.StartChildSpanFromContext(ctx, "QueryAccount")
+	defer span.Finish()
+
 	account := model.Account{}
 
 	bc.OpenBoltDb()
