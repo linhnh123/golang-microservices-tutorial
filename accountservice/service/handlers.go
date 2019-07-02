@@ -2,8 +2,6 @@ package service
 
 import (
 	"encoding/json"
-	"fmt"
-	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -17,6 +15,7 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/linhnh123/golang-microservices-tutorial/accountservice/dbclient"
+	cb "github.com/linhnh123/golang-microservices-tutorial/common/circuitbreaker"
 )
 
 var DBClient dbclient.IBoltClient
@@ -27,6 +26,11 @@ type healthCheckResponse struct {
 }
 
 var client = &http.Client{}
+var fallbackQuote = model.Quote{
+	Language: "en",
+	ServedBy: "circuit-breaker",
+	Text:     "Text Breaker",
+}
 
 func init() {
 	var transport http.RoundTripper = &http.Transport{
@@ -69,17 +73,15 @@ func GetAccount(w http.ResponseWriter, r *http.Request) {
 	account, err := DBClient.QueryAccount(accountId)
 	account.ServedBy = getIp()
 
-	quote, err := getQuote()
-	if err == nil {
-		account.Quote = quote
-	}
-
 	if err != nil {
 		w.WriteHeader(http.StatusNotFound)
 		return
 	}
 
 	notifyVIP(account)
+
+	account.Quote = getQuote()
+	account.ImageUrl = getImageUrl(accountId)
 
 	data, _ := json.Marshal(account)
 	w.Header().Set("Content-Type", "application/json")
@@ -88,17 +90,14 @@ func GetAccount(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
-func getQuote() (model.Quote, error) {
-	req, _ := http.NewRequest("GET", "http://quotes-service:8080/api/quote?strength=4", nil)
-	resp, err := client.Do(req)
-
-	if err == nil && resp.StatusCode == 200 {
+func getQuote() model.Quote {
+	body, err := cb.CallUsingCircuitBreaker("quotes-service", "http://quotes-service:8080/api/quote?strength=4", "GET")
+	if err == nil {
 		quote := model.Quote{}
-		bytes, _ := ioutil.ReadAll(resp.Body)
-		json.Unmarshal(bytes, &quote)
-		return quote, nil
+		json.Unmarshal(body, &quote)
+		return quote
 	} else {
-		return model.Quote{}, fmt.Errorf("Some error")
+		return fallbackQuote
 	}
 }
 
@@ -117,5 +116,14 @@ func HealthCheck(w http.ResponseWriter, r *http.Request) {
 	} else {
 		data, _ := json.Marshal(healthCheckResponse{Status: "Database unaccessible"})
 		writeJsonResponse(w, http.StatusServiceUnavailable, data)
+	}
+}
+
+func getImageUrl(accountId string) string {
+	body, err := cb.CallUsingCircuitBreaker("imageservice", "http://imageservice:7777/accounts/"+accountId, "GET")
+	if err == nil {
+		return string(body)
+	} else {
+		return "http://path.to.placeholder"
 	}
 }

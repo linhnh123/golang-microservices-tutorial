@@ -11,4 +11,5 @@ type Account struct {
 	Name     string `json:"name"`
 	ServedBy string `json:"servedBy"`
 	Quote    Quote  `json:"quote"`
+	ImageUrl string `json:"imageUrl"`
 }
